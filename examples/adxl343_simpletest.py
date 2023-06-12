@@ -10,5 +10,5 @@ i2c = board.I2C()  # uses board.SCL and board.SDA
 adx = adxl343.ADXL343(i2c)
 
 while True:
-    #print("Pressure: {:.2f}hPa".format(lps.pressure))
+    # print("Pressure: {:.2f}hPa".format(lps.pressure))
     time.sleep(0.5)

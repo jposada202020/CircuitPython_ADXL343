@@ -114,7 +114,10 @@ class ADXL343:
         | :py:const:`adxl343.READY`   | :py:const:`0b1` |
         +-----------------------------+-----------------+
         """
-        values = ("STANDBY", "READY",)
+        values = (
+            "STANDBY",
+            "READY",
+        )
         return values[self._measurement_mode]
 
     @measurement_mode.setter
@@ -125,6 +128,10 @@ class ADXL343:
 
     @property
     def acceleration(self) -> Tuple[float, float, float]:
+        """
+        Sensor Acceleration
+        :return: Acceleration Data
+        """
         x, y, z = self._acceleration_data
         x = x * _STANDARD_GRAVITY * self._cached_resolution
         y = y * _STANDARD_GRAVITY * self._cached_resolution
@@ -176,7 +183,10 @@ class ADXL343:
         | :py:const:`adxl343.HIGH_RES` | :py:const:`0b1` |
         +------------------------------+-----------------+
         """
-        values = ("LOW_RES", "HIGH_RES", )
+        values = (
+            "LOW_RES",
+            "HIGH_RES",
+        )
         return values[self._resolution_mode]
 
     @resolution_mode.setter
