@@ -299,8 +299,8 @@ class ADXL343:
     def tap_latent(self) -> float:
         """
         Wwait time from the detection of a tap event to the
-        start of the time window during which a possible second tap event can 
-        be detected. The scale factor is 1.25 ms/LSB. 
+        start of the time window during which a possible second tap event can
+        be detected. The scale factor is 1.25 ms/LSB.
         A value of 0 disables the double tap function.
 
         """
@@ -316,8 +316,8 @@ class ADXL343:
     def tap_window(self) -> float:
         """
         Time after the expiration of the latency time during which a
-        second valid tap can begin. 
-        The scale factor is 1.25 ms/LSB. 
+        second valid tap can begin.
+        The scale factor is 1.25 ms/LSB.
         A value of 0 disables the double tap function
 
         """
