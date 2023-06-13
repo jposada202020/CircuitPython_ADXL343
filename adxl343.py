@@ -38,6 +38,8 @@ _INT_ENABLE = const(0x2E)
 _INT_SOURCE = const(0x30)
 _TAP_AXES = const(0x2A)
 _DUR = const(0x21)
+_LATENT = const(0x22)
+_WINDOW = const(0x23)
 
 STANDBY = const(0b0)
 READY = const(0b1)
@@ -95,6 +97,8 @@ class ADXL343:
     _acceleration_data = Struct(_ACC, "<hhh")
     _tap_threshold = UnaryStruct(_THRESH_TAP, "B")
     _tap_duration = UnaryStruct(_DUR, "B")
+    _tap_latent = UnaryStruct(_LATENT, "B")
+    _tap_window = UnaryStruct(_WINDOW, "B")
 
     _measurement_mode = RWBits(1, _POWER_CTL, 3)
     _resolution_mode = RWBits(1, _DATA_FORMAT, 3)
@@ -277,7 +281,10 @@ class ADXL343:
     @property
     def tap_duration(self) -> float:
         """
-        Tap threshold in us
+        Tap threshold in us. Maximum time that an event must be above the
+        :attr:`tap_threshold` to qualify as a tap event. The scale factor
+        is 625 μs/LSB.
+        A value of 0 disables the single tap/ double tap functions
 
         """
         return self._tap_duration * 625
@@ -287,3 +294,37 @@ class ADXL343:
         if 159000 < value < 1:
             raise ValueError("Value should be a valid tap_duration setting")
         self._tap_duration = int(value / 625)
+
+    @property
+    def tap_latent(self) -> float:
+        """
+        Wwait time from the detection of a tap event to the
+        start of the time window during which a possible second tap event can 
+        be detected. The scale factor is 1.25 ms/LSB. 
+        A value of 0 disables the double tap function.
+
+        """
+        return self._tap_latent * 1.25
+
+    @tap_latent.setter
+    def tap_latent(self, value: int) -> None:
+        if 318 < value < 1:
+            raise ValueError("Value should be a valid tap_latent setting")
+        self._tap_latent = int(value / 1.25)
+
+    @property
+    def tap_window(self) -> float:
+        """
+        Time after the expiration of the latency time during which a
+        second valid tap can begin. 
+        The scale factor is 1.25 ms/LSB. 
+        A value of 0 disables the double tap function
+
+        """
+        return self._tap_window * 1.25
+
+    @tap_window.setter
+    def tap_window(self, value: int) -> None:
+        if 318 < value < 1:
+            raise ValueError("Value should be a valid tap_window setting")
+        self._tap_window = int(value / 1.25)
