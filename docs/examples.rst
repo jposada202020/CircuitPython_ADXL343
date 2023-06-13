@@ -24,3 +24,12 @@ Example showing the Acceleration range setting
 .. literalinclude:: ../examples/adxl343_acceleration_range.py
     :caption: examples/adxl343_acceleration_range.py
     :lines: 5-
+
+Single tap mode settings
+-------------------------
+
+Example showing the Single tap mode setting
+
+.. literalinclude:: ../examples/adxl343_single_tap_mode.py
+    :caption: examples/adxl343_single_tap_mode.py
+    :lines: 5-

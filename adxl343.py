@@ -5,7 +5,7 @@
 `adxl343`
 ================================================================================
 
-MicroPython Driver for the Analog Devices ADXL343 Accelerometer
+CircuitPython Driver for the Analog Devices ADXL343 Accelerometer
 
 
 * Author(s): Jose D. Montoya
@@ -33,6 +33,11 @@ _REG_WHOAMI = const(0x00)
 _POWER_CTL = const(0x2D)
 _DATA_FORMAT = const(0x31)
 _ACC = const(0x32)
+_THRESH_TAP = const(0x1D)
+_INT_ENABLE = const(0x2E)
+_INT_SOURCE = const(0x30)
+_TAP_AXES = const(0x2A)
+_DUR = const(0x21)
 
 STANDBY = const(0b0)
 READY = const(0b1)
@@ -47,6 +52,10 @@ RANGE_4 = const(0b01)
 RANGE_8 = const(0b10)
 RANGE_16 = const(0b11)
 acceleration_range_values = (RANGE_2, RANGE_4, RANGE_8, RANGE_16)
+
+ST_DISABLED = const(0b0)
+ST_ENABLED = const(0b1)
+single_tap_mode_values = (ST_DISABLED, ST_ENABLED)
 
 
 class ADXL343:
@@ -84,12 +93,15 @@ class ADXL343:
 
     _device_id = ROUnaryStruct(_REG_WHOAMI, "B")
     _acceleration_data = Struct(_ACC, "<hhh")
+    _tap_threshold = UnaryStruct(_THRESH_TAP, "B")
+    _tap_duration = UnaryStruct(_DUR, "B")
 
     _measurement_mode = RWBits(1, _POWER_CTL, 3)
     _resolution_mode = RWBits(1, _DATA_FORMAT, 3)
     _acceleration_range = RWBits(2, _DATA_FORMAT, 0)
-
-    needed_info = UnaryStruct(_POWER_CTL, "B")
+    _single_tap_mode = RWBits(1, _INT_ENABLE, 6)
+    _single_tap_mode_interrupt = RWBits(1, _INT_SOURCE, 6)
+    _single_tap_enable_axes = RWBits(3, _TAP_AXES, 0)
 
     def __init__(self, i2c_bus: I2C, address: int = 0x53) -> None:
         self.i2c_device = i2c_device.I2CDevice(i2c_bus, address)
@@ -99,12 +111,17 @@ class ADXL343:
 
         self._measurement_mode = True
         self._resolution_mode = True
+
         self._cached_resolution = 0.004
 
     @property
     def measurement_mode(self) -> str:
         """
-        Sensor measurement_mode
+        Sensor measurement_mode. Selecting 0 or `False` places the part
+        into standby mode, and a setting of 1 or `True` places the part
+        into measurement mode.
+        The ADXL343 powers up in standby mode with minimum power
+        consumption.
 
         +-----------------------------+-----------------+
         | Mode                        | Value           |
@@ -129,8 +146,7 @@ class ADXL343:
     @property
     def acceleration(self) -> Tuple[float, float, float]:
         """
-        Sensor Acceleration
-        :return: Acceleration Data
+        Acceleration Data in :math:`m / s ^ 2`
         """
         x, y, z = self._acceleration_data
         x = x * _STANDARD_GRAVITY * self._cached_resolution
@@ -173,7 +189,12 @@ class ADXL343:
     @property
     def resolution_mode(self) -> str:
         """
-        Sensor resolution_mode
+        Sensor resolution_mode. When :attr:`resolution_mode` is set to `True`,
+        the device is in full resolution mode, where the output resolution
+        increases with the g range set by the range bits to maintain a 4
+        mg/LSB scale factor. When is set to `False`, the device is in 10-bit
+        mode, and the range bits determine the maximum g
+        :attr:`acceleration_range` and scale factor.
 
         +------------------------------+-----------------+
         | Mode                         | Value           |
@@ -199,3 +220,70 @@ class ADXL343:
             self._cached_resolution = res_values[self._acceleration_range]
         else:
             self._cached_resolution = 0.004
+
+    @property
+    def tap_threshold(self) -> float:
+        """
+        Tap threshold in :math:`m / s ^ 2`
+        :return:
+        """
+        return self._tap_threshold * 0.0627451 * _STANDARD_GRAVITY
+
+    @tap_threshold.setter
+    def tap_threshold(self, value: float) -> None:
+
+        if 156 < value < 1:
+            raise ValueError("Value should be a valid tap_threshold setting")
+        self._tap_threshold = int(value / _STANDARD_GRAVITY / 0.0627451)
+
+    @property
+    def single_tap_mode(self) -> str:
+        """
+        Sensor single_tap_mode
+
+        +---------------------------------+-----------------+
+        | Mode                            | Value           |
+        +=================================+=================+
+        | :py:const:`adxl343.ST_DISABLED` | :py:const:`0b0` |
+        +---------------------------------+-----------------+
+        | :py:const:`adxl343.ST_ENABLED`  | :py:const:`0b1` |
+        +---------------------------------+-----------------+
+        """
+        values = (
+            "ST_DISABLED",
+            "ST_ENABLED",
+        )
+        return values[self._single_tap_mode]
+
+    @single_tap_mode.setter
+    def single_tap_mode(self, value: int) -> None:
+        if value not in single_tap_mode_values:
+            raise ValueError("Value must be a valid single_tap_mode setting")
+        self._single_tap_mode = value
+        if value == 1:
+            self._single_tap_enable_axes = 0b111
+        else:
+            self._single_tap_enable_axes = 0
+
+    @property
+    def single_tap_activated(self) -> bool:
+        """
+        Returns if a single tap event was detected
+        :return: bool
+        """
+        values = {0: False, 1: True}
+        return values[self._single_tap_mode_interrupt]
+
+    @property
+    def tap_duration(self) -> float:
+        """
+        Tap threshold in us
+
+        """
+        return self._tap_duration * 625
+
+    @tap_duration.setter
+    def tap_duration(self, value: int) -> None:
+        if 159000 < value < 1:
+            raise ValueError("Value should be a valid tap_duration setting")
+        self._tap_duration = int(value / 625)
