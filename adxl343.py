@@ -59,6 +59,9 @@ ST_DISABLED = const(0b0)
 ST_ENABLED = const(0b1)
 single_tap_mode_values = (ST_DISABLED, ST_ENABLED)
 
+DT_DISABLED = const(0b0)
+DT_ENABLED = const(0b1)
+double_tap_mode_values = (DT_DISABLED, DT_ENABLED)
 
 class ADXL343:
     """Driver for the ADXL343 Sensor connected over I2C.
@@ -106,6 +109,9 @@ class ADXL343:
     _single_tap_mode = RWBits(1, _INT_ENABLE, 6)
     _single_tap_mode_interrupt = RWBits(1, _INT_SOURCE, 6)
     _single_tap_enable_axes = RWBits(3, _TAP_AXES, 0)
+    _double_tap_mode_interrupt = RWBits(1, _INT_SOURCE, 5)
+    _double_tap_mode = RWBits(1, _INT_ENABLE, 5)
+    _double_tap_enable_axes = RWBits(3, _TAP_AXES, 0)
 
     def __init__(self, i2c_bus: I2C, address: int = 0x53) -> None:
         self.i2c_device = i2c_device.I2CDevice(i2c_bus, address)
@@ -328,3 +334,41 @@ class ADXL343:
         if 318 < value < 1:
             raise ValueError("Value should be a valid tap_window setting")
         self._tap_window = int(value / 1.25)
+
+    @property
+    def double_tap_mode(self) -> str:
+        """
+        Sensor double_tap_mode
+
+        +---------------------------------+-----------------+
+        | Mode                            | Value           |
+        +=================================+=================+
+        | :py:const:`adxl343.DT_DISABLED` | :py:const:`0b0` |
+        +---------------------------------+-----------------+
+        | :py:const:`adxl343.DT_ENABLED`  | :py:const:`0b1` |
+        +---------------------------------+-----------------+
+        """
+        values = (
+            "DT_DISABLED",
+            "DT_ENABLED",
+        )
+        return values[self._double_tap_mode]
+
+    @double_tap_mode.setter
+    def double_tap_mode(self, value: int) -> None:
+        if value not in double_tap_mode_values:
+            raise ValueError("Value must be a valid double_tap_mode setting")
+        self._double_tap_mode = value
+        if value == 1:
+            self._double_tap_enable_axes = 0b111
+        else:
+            self._double_tap_enable_axes = 0
+
+    @property
+    def double_tap_activated(self) -> bool:
+        """
+        Returns if a double tap event was detected
+        :return: bool
+        """
+        values = {0: False, 1: True}
+        return values[self._double_tap_mode_interrupt]
