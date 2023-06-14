@@ -41,6 +41,8 @@ _DUR = const(0x21)
 _LATENT = const(0x22)
 _WINDOW = const(0x23)
 _THRESH_ACT = const(0x24)
+_THRESH_INACT = const(0x25)
+_TIME_INACT = const(0x26)
 _ACT_INACT_CTL = const(0x27)
 
 STANDBY = const(0b0)
@@ -114,6 +116,9 @@ class ADXL343:
     _tap_window = UnaryStruct(_WINDOW, "B")
     # Activity Information
     _activity_threshold = UnaryStruct(_THRESH_ACT, "B")
+    # Inactivity Information
+    _inactivity_threshold = UnaryStruct(_THRESH_INACT, "B")
+    _inactivity_duration = UnaryStruct(_TIME_INACT, "B")
     # Acceleration Config
     _measurement_mode = RWBits(1, _POWER_CTL, 3)
     _resolution_mode = RWBits(1, _DATA_FORMAT, 3)
@@ -130,8 +135,10 @@ class ADXL343:
     _activity_mode = RWBits(1, _INT_ENABLE, 4)
     _activity_interrupt = RWBits(1, _INT_SOURCE, 4)
     _activity_enable_axes = RWBits(3, _ACT_INACT_CTL, 4)
-
-    needed_info = UnaryStruct(0x27, "B")
+    # Inactivity Configuration
+    _inactivity_mode = RWBits(1, _INT_ENABLE, 3)
+    _inactivity_interrupt = RWBits(1, _INT_SOURCE, 3)
+    _inactivity_enable_axes = RWBits(3, _ACT_INACT_CTL, 0)
 
     def __init__(self, i2c_bus: I2C, address: int = 0x53) -> None:
         self.i2c_device = i2c_device.I2CDevice(i2c_bus, address)
