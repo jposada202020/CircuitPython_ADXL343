@@ -33,3 +33,12 @@ Example showing the Single tap mode setting
 .. literalinclude:: ../examples/adxl343_single_tap_mode.py
     :caption: examples/adxl343_single_tap_mode.py
     :lines: 5-
+
+Double tap mode settings
+-------------------------
+
+Example showing the Double tap mode setting
+
+.. literalinclude:: ../examples/adxl343_double_tap_mode.py
+    :caption: examples/adxl343_double_tap_mode.py
+    :lines: 5-

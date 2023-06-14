@@ -63,6 +63,7 @@ DT_DISABLED = const(0b0)
 DT_ENABLED = const(0b1)
 double_tap_mode_values = (DT_DISABLED, DT_ENABLED)
 
+
 class ADXL343:
     """Driver for the ADXL343 Sensor connected over I2C.
 
@@ -304,7 +305,7 @@ class ADXL343:
     @property
     def tap_latent(self) -> float:
         """
-        Wwait time from the detection of a tap event to the
+        Wait time from the detection of a tap event to the
         start of the time window during which a possible second tap event can
         be detected. The scale factor is 1.25 ms/LSB.
         A value of 0 disables the double tap function.
@@ -339,6 +340,15 @@ class ADXL343:
     def double_tap_mode(self) -> str:
         """
         Sensor double_tap_mode
+        Every mechanical system has somewhat different single tap/double
+        tap responses based on the mechanical characteristics of the
+        system. Therefore, some experimentation is required. In general,
+        a good starting point is to set the :attr:`tap_duration` to a value
+        greater 10 ms, the :attr:`tap_latent` to a value greater than
+        20 ms, the :attr:`tap_window` to a value greater than 80 ms,
+        and the :attr:`tap_threshold` to a value greater than 3 g.
+        Setting a very low values may result in an unpredictable response
+        due to the accelerometer picking up echoes of the tap inputs.
 
         +---------------------------------+-----------------+
         | Mode                            | Value           |
