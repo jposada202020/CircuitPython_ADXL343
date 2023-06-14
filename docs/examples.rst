@@ -42,3 +42,12 @@ Example showing the Double tap mode setting
 .. literalinclude:: ../examples/adxl343_double_tap_mode.py
     :caption: examples/adxl343_double_tap_mode.py
     :lines: 5-
+
+Activity Detection
+-------------------------
+
+Example showing an activity detection example
+
+.. literalinclude:: ../examples/adxl343_activity_detection.py
+    :caption: examples/adxl343_activity_detection.py
+    :lines: 5-

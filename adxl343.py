@@ -40,6 +40,8 @@ _TAP_AXES = const(0x2A)
 _DUR = const(0x21)
 _LATENT = const(0x22)
 _WINDOW = const(0x23)
+_THRESH_ACT = const(0x24)
+_ACT_INACT_CTL = const(0x27)
 
 STANDBY = const(0b0)
 READY = const(0b1)
@@ -62,6 +64,10 @@ single_tap_mode_values = (ST_DISABLED, ST_ENABLED)
 DT_DISABLED = const(0b0)
 DT_ENABLED = const(0b1)
 double_tap_mode_values = (DT_DISABLED, DT_ENABLED)
+
+ACTIVITY_DISABLED = const(0b0)
+ACTIVITY_ENABLED = const(0b1)
+activity_mode_values = (ACTIVITY_DISABLED, ACTIVITY_ENABLED)
 
 
 class ADXL343:
@@ -97,22 +103,35 @@ class ADXL343:
 
     """
 
+    # Device Data
     _device_id = ROUnaryStruct(_REG_WHOAMI, "B")
+    # Acceleration Data
     _acceleration_data = Struct(_ACC, "<hhh")
+    # Tap Information
     _tap_threshold = UnaryStruct(_THRESH_TAP, "B")
     _tap_duration = UnaryStruct(_DUR, "B")
     _tap_latent = UnaryStruct(_LATENT, "B")
     _tap_window = UnaryStruct(_WINDOW, "B")
-
+    # Activity Information
+    _activity_threshold = UnaryStruct(_THRESH_ACT, "B")
+    # Acceleration Config
     _measurement_mode = RWBits(1, _POWER_CTL, 3)
     _resolution_mode = RWBits(1, _DATA_FORMAT, 3)
     _acceleration_range = RWBits(2, _DATA_FORMAT, 0)
+    # Tap Configuration
     _single_tap_mode = RWBits(1, _INT_ENABLE, 6)
     _single_tap_mode_interrupt = RWBits(1, _INT_SOURCE, 6)
     _single_tap_enable_axes = RWBits(3, _TAP_AXES, 0)
+    # Double Tap Configuration
     _double_tap_mode_interrupt = RWBits(1, _INT_SOURCE, 5)
     _double_tap_mode = RWBits(1, _INT_ENABLE, 5)
     _double_tap_enable_axes = RWBits(3, _TAP_AXES, 0)
+    # Activity Configuration
+    _activity_mode = RWBits(1, _INT_ENABLE, 4)
+    _activity_interrupt = RWBits(1, _INT_SOURCE, 4)
+    _activity_enable_axes = RWBits(3, _ACT_INACT_CTL, 4)
+
+    needed_info = UnaryStruct(0x27, "B")
 
     def __init__(self, i2c_bus: I2C, address: int = 0x53) -> None:
         self.i2c_device = i2c_device.I2CDevice(i2c_bus, address)
@@ -382,3 +401,55 @@ class ADXL343:
         """
         values = {0: False, 1: True}
         return values[self._double_tap_mode_interrupt]
+
+    @property
+    def activity_threshold(self) -> float:
+        """
+        Activity threshold in :math:`m / s ^ 2`
+        :return:
+        """
+        return self._activity_threshold * 0.0627451 * _STANDARD_GRAVITY
+
+    @activity_threshold.setter
+    def activity_threshold(self, value: float) -> None:
+        if 156 < value < 1:
+            raise ValueError("Value should be a valid activity_threshold setting")
+        self._activity_threshold = int(value / _STANDARD_GRAVITY / 0.0627451)
+
+    @property
+    def activity_mode(self) -> str:
+        """
+        Sensor activity_mode
+
+        +---------------------------------------+-----------------+
+        | Mode                                  | Value           |
+        +=======================================+=================+
+        | :py:const:`adxl343.ACTIVITY_DISABLED` | :py:const:`0b0` |
+        +---------------------------------------+-----------------+
+        | :py:const:`adxl343.ACTIVITY_ENABLED`  | :py:const:`0b1` |
+        +---------------------------------------+-----------------+
+        """
+        values = (
+            "ACTIVITY_DISABLED",
+            "ACTIVITY_ENABLED",
+        )
+        return values[self._activity_mode]
+
+    @activity_mode.setter
+    def activity_mode(self, value: int) -> None:
+        if value not in activity_mode_values:
+            raise ValueError("Value must be a valid activity_mode setting")
+        self._activity_mode = value
+        if value == 1:
+            self._activity_enable_axes = 0b111
+        else:
+            self._activity_enable_axes = 0
+
+    @property
+    def activity_detected(self) -> bool:
+        """
+        Returns if an activity was detected
+        :return: bool
+        """
+        values = {0: False, 1: True}
+        return values[self._activity_interrupt]
